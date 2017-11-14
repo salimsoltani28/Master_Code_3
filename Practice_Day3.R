@@ -77,3 +77,11 @@ plot(x)
 x<-  lsat[lsat=10]
 x
 plot(x)
+library(move)
+# Get the the vector data from RStoolbox package(Supervised claasification)
+poly<- readRDS(system.file("external/trainingPolygons.rds", package = "RStoolbox"))
+#Create a raster with the properties (extend and projection the vector )
+env<- raster(poly, vals= rnorm(100))
+poly
+#Extract raster values based on the vector
+x<- extract(env, poly)
