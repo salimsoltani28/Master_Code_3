@@ -85,3 +85,22 @@ env<- raster(poly, vals= rnorm(100))
 poly
 #Extract raster values based on the vector
 x<- extract(env, poly)
+#Populate all bands with normally distributed data ncells= number of enteri
+lsat[ ] <- rnorm(ncell(lsat))
+#set all value below 0 to NA
+lsat[lsat<0]<- NA
+# All value in "env" set zero and poly to to one
+env[ ]<- 0
+env[poly]<-1
+env
+############################################################
+#Create a list of yes or No 
+
+x1<- rbinom(10, size = 1, prob = 0.5)
+x1
+x2<- factor(x1, labels = c("yes", "no"))
+summary(x2)
+levels(x2)
+as.character(x) #convert to acutal character
+library(car)
+recode(x2, "'yes'='sure'; 'no'='maybe'")
