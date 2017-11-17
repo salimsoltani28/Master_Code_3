@@ -104,3 +104,5 @@ levels(x2)
 as.character(x) #convert to acutal character
 library(car)
 recode(x2, "'yes'='sure'; 'no'='maybe'")
+1+3
+#update it please 
