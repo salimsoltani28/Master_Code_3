@@ -35,7 +35,7 @@ writeOGR()
 #Export Raster to hard drive from R
 writeRaster(prec)
 library(rgdal)
-study_area<- readOGR("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data","study_area_11")
+study_area<- readOGR("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data/study_area_11.shp")
 setwd("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data")
 study_area<- readOGR("study_area_ll.shp")
 plot(study_area)
@@ -105,3 +105,181 @@ writeRaster(p224r63_2011, filename = "F:/03Projects/Remote Sensing for Eco-Logis
 # import all bands from a multi band file use the belwo function
 p224r63<- brick("F:/03Projects/Remote Sensing for Eco-Logist/data_book/raster_data/final/p224r63_2011.grd")
 inMemory(p224r63)
+library(sp)
+library(rgdal)
+#conversion to sp from Raster (sp didnt work as this)
+P224r63_2011_sp<- as(p224r63_2011, "spatialPixelsDataFrame")
+p224r63_2011
+
+#export raster for making sure that is permanantly saved.
+
+#file format if you are switching between differen sfotware then you have svae it in order other software can read that.
+hdr(p224r63_2011_B1,format = "ENVI")
+# Add header to ENVI
+rasterOptions(addheader = "ENVI")
+#read vector recomended command is readOGR because it import with all projection and other information which is needed
+vect<- readOGR(dsn = "F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data", layer = "area_of_interest")
+plot(vect)
+#read a vector data from UNEP 
+UNEP<- readOGR("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data", "PAs_UNEP_WCMC_p224r63")
+plot(UNEP)
+#import road data with use of readOGR
+road<- readOGR("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data", "roads_p224r63_UTMsouth")
+plot(road)
+#import GPS file in the R using readOGR command
+gpsPoints<- readOGR(dsn = "F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data/field_measuerements.gpx", layer = "waypoints")
+plot(gpsPoints)
+#import CSV files and then convert it to spatial software adaptable 
+csv<- read.csv("F:/03Projects/Remote Sensing for Eco-Logist/data_book/vector_data/csv_file_locationdata.csv")
+#convert th csv data to spatial data
+csv.sp<- SpatialPoints(coords = csv[,c("X","Y")])
+#build spatialPointsDataFrame for the data
+csv.spdf<- SpatialPointsDataFrame(csv[,c("X","Y")], data = csv[3:5])
+csv.spdf
+coordinates(csv)<- c("X", "Y")
+class(csv)
+#Get or set the coordinate reference system (CRS) of a Raster* object.
+projection(csv)<- projection(p224r63_2011)
+#Check the extent of object
+ex<- extent(p224r63_2011)
+ex
+plot(ex)
+ex*0.5
+ex
+#Exporting vector data, in order to open your data to most GIS program usually the ESRI shp used to export in this format use writeOGR
+writeOGR(csv.spdf,"F:/03Projects/Remote Sensing for Eco-Logist/Processed","csv_spdf_as_shp", driver = "ESRI Shapefile" )
+#Export to KML, KML require the unprjected x.y and now we can export using writeOGR command
+writeOGR(gpsPoints, dsn = "F:/03Projects/Remote Sensing for Eco-Logist/Processed/gpsPoints_GE.kml", layer = "GPSpoints", driver = "KML")
+library(maptools)
+#to see the prjection of GPS points 
+projection(gpsPoints)
+#write GPX file 
+writeOGR(gpsPoints, "F:/03Projects/Remote Sensing for Eco-Logist/Processed/place_togo.gpx", layer = "waypoints", driver = "GPX", dataset_options = "GPX_USE_EXTENSIONS=YES")
+#How to plot spatial data in R
+plot(p224r63_2011)
+#plot only 5th layer
+plot(p224r63_2011,5)
+#change the color palette
+plot(p224r63_2011,5,col= grey.colors(100))
+#set layer transparency to 50%
+plot(p224r63_2011,5, alpha= 0.8)
+#alternative function (less flexible than plot and no legend)
+image(p224r63_2011,5)
+#plot with coarse pixel
+plot(p224r63_2011,5,maxpixels= 2e+05)
+# plot the first four bands 
+spplot(p224r63_2011, 1:4)
+#plot single layer with different option 
+library(RStoolbox)
+ggR(p224r63_2011,5)
+#plot with legend
+ggR(p224r63_2011, 5, geom_raster = TRUE)
+#with a custom legend 
+ggR(p224r63_2011, 5, geom_raster = TRUE)+ scale_fill_gradientn(colours=rainbow(100))
+# plot RGB color for image "stretch remove the value which is beyond the quantile
+plotRGB(p224r63_2011,3,2,1, stretch="lin")
+p224r63_2011
+#plot starting from 4th band
+plotRGB(p224r63_2011,4,3,2, stretch="lin")
+# plot with ggRGB
+ggRGB(p224r63_2011,3,2,1, b=1,stretch = "lin")
+# plot band 5
+plot(p224r63_2011,5)
+#plot the points over the image 
+points(csv.spdf,col= "blue")
+#add study area on the plot 
+plot(study_area, add= TRUE, lwd= 10)
+# using plot extend command you can add the extent of shape around it 
+plot(road)
+plot(extent(road), add=TRUE)
+#chang the spatial data frame to nonspatial dataframe
+df_pts<- as.data.frame(csv.spdf)
+#change the polygon to data frame using below command 
+df_poly<- fortify(study_area)
+library(ggplot2)
+head(df_poly,3)
+#change the raster to data frame using ggplot2 but not recommanded for larger raster
+ df_ras<- as.data.frame(p224r63_2011,xy=TRUE)
+df_ras
+df_ras<- fortify(p224r63_2011, maxpixels= 1e+05)
+# ggplot2 commands for different data 
+#plot raster with the ggplot function 
+ggRGB(p224r63_2011, 4, 3, 2, stretch = "lin")
+#plot point with 
+geom_point(data = df_pts, aes(x= X, y= Y), size= 5, col= "yellow")+
+geom_path(data =df_poly,aes(x= long, y= lat, group= group), size= 2, col= "blue")+
+coord_equal()
+#Basic spatial data handling in R
+#Bring up the first row
+values<- p224r63_2011_B1[1,]
+head(values)
+#Second collum
+values<- p224r63_2011_B1[,2]
+head(values)
+#column 7-300
+values<- p224r63_2011_B1[,7:300]
+head(values)
+values
+#single pixel 1st row & 2nd column
+values<- p224r63_2011_B1[1,2]
+values
+#get value from specific cell 
+p224r63_2011_B1[c(3141,5926)]
+#select all value
+values<- p224r63_2011_B1[,]
+
+values
+#also 
+values<- p224r63_2011_B1[]
+values
+# extract specific band from a stack 
+p224r63_2011[[2]]
+#Query more than one layer or Band for instance 5 band drom 7
+subs<- p224r63_2011[[1:6]]
+subs
+#also possible with the function 
+subs<- p224r63_2011[[c("B1_sre", "B6_bt")]]
+subs<- p224r63_2011$LT52240632011210.1
+subs
+p224r63_2011[[c(1,3,7)]]
+# remove layer by adding - sing in your syntix
+p224r63_2011.drop15<- p224r63_2011[[-c(1,5)]]
+p224r63_2011.drop15
+p224r63_2011
+#also to remove a lyer
+p224r63_2011.drop15<- dropLayer(p224r63_2011, c(1,5))
+p224r63_2011.drop15
+# specify one layer and divide it by 2 then make a new name for it
+newlayer<- p224r63_2011[[1]]/2
+names(newlayer)<- "new"
+newlayer
+#you can add a layer by using the follwoing command 
+p224r63_2011.add<- addLayer(p224r63_2011,newlayer)
+p224r63_2011.add
+#querying pixel will return with single column per layer and and pixel in row
+vaues<- p224r63_2011[3:7,84]
+vaues
+#to extract value from Band5 and row 3-7 and column 90
+values<- p224r63_2011[[5]][3:7,90]
+values
+#
+layercopy<- p224r63_2011[[5]]
+#query value before modification 
+layercopy[70:71,90:91]
+#replace values by two NA values 
+layercopy[70,90:91]<- NA
+layercopy
+#query the layer after modification (which NA apears in the result)
+layercopy[70:71,90:91]
+#set all value of the layer to 0
+layercopy[]<-0
+layercopy
+#query from a specific band all value smaller then 0.2 or any
+queryraster<- p224r63_2011[[5]]< 0.2
+queryraster
+plot(queryraster)
+dataType(queryraster)
+#now we can use this LOGIC layer to query desired pixel value from 
+values<- p224r63_2011[queryraster]
+values
+layercopy[queryraster]<- NA
