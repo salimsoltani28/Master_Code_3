@@ -158,38 +158,41 @@ turtle_sp
 proj4string(turtle_sp)<- CRS("+proj=longlate +ellps=WGS84")
 #Lets know about type of commands
 getClass("Line")
-#it has also does not correspond to 
+#it is only sp package and has no relation with spatial class
 getClass("Lines")
 # it has spatial context
 getClass("SpatialLines")
 
 install.packages("maps")
 install.packages("maptools")
+library("maptools")
 library(maps)
 library(maptools)
-#lets use the command to assign for japan
-japan <- map("world", "japan", plot = FALSE)
+#lets use the command to assign for japan (which is comming for spatial line)
+japan<- map("world", "japan", plot = FALSE)
+
 #assign the coordinate system 
-p4s <- CRS("+proj=longlat +ellps=WGS84")
+p4s<- CRS("+proj=longlat +ellps=WGS84")
 #create spatial line for japan
 SLjapan<- map2SpatialLines(japan,proj4string = p4s)
+
 SLjapan
 # see the stracture
 str(SLjapan, max.level = 2)
-#apply saply
-Lines_len<- sapply(slot(SLjapan, "lines"), function(x)length(slot(x,"Lines")))
+#apply saply to know how many line object it contains 
+Lines_len<- sapply(slot(SLjapan, "lines"), function(x)length(slot(x, "Lines")))
 
-
+#see how many line object it contains 
 table(Lines_len)
-# we can use volcano data to create contour lines
+# we can use ContourLines2SLDF function included in maptools (Converter functions to build SpatialLinesDataFrame objects)
+#Using the vlcano exampl (calculate the contour lines from given data set)
 volcano_sl<- ContourLines2SLDF(contourLines(volcano))
-
-
-
+#we can see the level of contour (there is 10 level name)
 t(slot(volcano_sl, "data"))
+
 #give projection to it
 llCRS <- CRS("+proj=longlat +ellps=WGS84")
-#Now we work with spatila polygons
+#import data from auckshore (MapGen2SL: will convert data to Spatial Lines DataFrame obeject)
 auck_shore <- MapGen2SL("E:/12EAGLE/MB2 R Programming/auckland_mapgen.dat", llCRS)
 #see how is it 
 summary(auck_shore)
@@ -197,7 +200,9 @@ summary(auck_shore)
 plot(auck_shore)
 #add connected segment to plot
 lns<- slot(auck_shore, "lines")
-#create obect of class line or lines
+
+#table uses the cross-classifying factors to build a contingency table
+
 table(sapply(lns, function(x)length(slot(x, "Lines"))))
 #apply function over vectore 
 islands_auck<- sapply(lns, function(x){
@@ -210,10 +215,11 @@ table(islands_auck)
 getClass("Polygon")
 getClass("Polygons")
 getClass("SpatialPolygons")
-#
+#the data is generally big so we can go to get smaller 
 islands_sl<- auck_shore[islands_auck]
 #add connected line segments to a plot
 list_of_Lines <- slot(islands_sl, "lines")
+
 islands_sp <- SpatialPolygons(lapply(list_of_Lines, function(x) {
   Polygons(list(Polygon(slot(slot(x, "Lines")[[1]],
                              "coords"))), ID = slot(x, "ID"))
@@ -225,42 +231,52 @@ order(sapply(slot(islands_sp, "polygons"), function(x)slot(x, "area")), decreasi
 
 
 library(maps)
-#
+# get state map from maps package 
 state.map<- map("state", plot = FALSE, fill = TRUE)
 
+#split the infor to state names 
 IDs <- sapply(strsplit(state.map$names, ":"), function(x) x[1])
+
 library(maptools)
+#convert to spatial polygon
 state.sp <- map2SpatialPolygons(state.map, IDs = IDs, proj4string = CRS("+proj=longlat +ellps=WGS84"))
 #read the satelite data
 sat <- read.table("E:/12EAGLE/MB2 R Programming/state.sat.data_mod.txt", row.names = 5, header = TRUE)
 str(sat)
 #get and set row names for Data Frames
 id <- match(row.names(sat), row.names(state.sp))
+id
 #apply the row names 
 row.names(sat)[is.na(id)]
 sat1<- sat[!is.na(id),]
+
 #change spatial data frame polygon 
 state.spdf <- SpatialPolygonsDataFrame(state.sp, sat1)
 str(slot(state.spdf, "data"))
 
 str(state.spdf, max.level = 2)
-#Apply the name of Arizona
-rownames(sat1)[2] <- "Arizona"
-SpatialPolygonsDataFrame(state.sp, sat1)
 
+#if we channge the row 2 name to Arizon, so it is no longer matching and the error goanna happen
+rownames(sat1)[2] <- "Arizona"
+# then do the command and you will  recieve error function 
+SpatialPolygonsDataFrame(state.sp, sat1)
+# assign the value to DC
 DC <- "district of columbia"
 not_dc <- !(row.names(state.spdf) == DC)
+# add the not_dc in the row of the state.spdf 
 state.spdf1 <- state.spdf[not_dc, ]
+# see the value which are not matching 
+table(state.spdf1$mscore)
 dim(state.spdf1)
 
 summary(state.spdf1)
-
+install.packages("highfrequency")
+load("high.RData")
 manitoulin_sp <- load("high.RData")
 manitoulin_sp <- high[[4]]
 length(slot(manitoulin_sp, "polygons"))
 sapply(slot(slot(manitoulin_sp, "polygons")[[1]], "Polygons"), function(x) slot(x, "hole"))
 sapply(slot(slot(manitoulin_sp, "polygons")[[1]], "Polygons"), function(x) slot(x, "ringDir"))
-
 
 library(rgeos)
 manitoulin_sp <- createSPComment(manitoulin_sp)
